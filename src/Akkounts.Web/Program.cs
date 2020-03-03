@@ -1,7 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace Akkounts.Publisher
+namespace Akkounts.Web
 {
     public class Program
     {
@@ -12,9 +12,9 @@ namespace Akkounts.Publisher
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureServices((hostContext, services) =>
+                .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    services.AddHostedService<Worker>();
+                    webBuilder.UseStartup<Startup>();
                 });
     }
 }

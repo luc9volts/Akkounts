@@ -17,8 +17,4 @@
     <ProjectReference Include="..\..\src\Akkounts.Core\Akkounts.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="UnitTest1.cs" />
-  </ItemGroup>
-
 </Project>
