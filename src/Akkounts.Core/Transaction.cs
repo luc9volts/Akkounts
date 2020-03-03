@@ -1,4 +1,4 @@
-namespace Akkounts.Publisher.AccountTransactions
+namespace Akkounts.Core
 {
     public abstract class Transaction
     {

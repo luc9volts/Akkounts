@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Akkounts.Publisher.AccountTransactions
+namespace Akkounts.Core
 {
     public class TransactionsFactory
     {

@@ -1,6 +1,6 @@
 using System;
 
-namespace Akkounts.Publisher.AccountTransactions
+namespace Akkounts.Core
 {
     public class RandomTransaction : Transaction
     {

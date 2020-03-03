@@ -1,5 +1,5 @@
 using System.Linq;
-using Akkounts.Publisher.AccountTransactions;
+using Akkounts.Core;
 using Xunit;
 
 namespace Akkounts.Publisher.Tests

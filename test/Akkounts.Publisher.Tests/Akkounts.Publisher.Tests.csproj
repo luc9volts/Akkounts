@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Akkounts.Publisher\Akkounts.Publisher.AccountTransactions\Akkounts.Publisher.AccountTransactions.csproj" />
+    <ProjectReference Include="..\..\src\Akkounts.Core\Akkounts.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

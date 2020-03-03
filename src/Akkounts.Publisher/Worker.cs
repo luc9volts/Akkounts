@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Akkounts.Publisher.Sender
+namespace Akkounts.Publisher
 {
     public class Worker : BackgroundService
     {
@@ -22,9 +22,8 @@ namespace Akkounts.Publisher.Sender
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                await Task.Delay(3000, stoppingToken);
+                await Task.Delay(1000, stoppingToken);
             }
-            _logger.LogInformation("STOPPED at: {time}", DateTimeOffset.Now);
         }
     }
 }
