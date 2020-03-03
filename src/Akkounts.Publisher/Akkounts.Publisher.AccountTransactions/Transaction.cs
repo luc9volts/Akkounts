@@ -1,15 +1,10 @@
 namespace Akkounts.Publisher.AccountTransactions
 {
-    public class Transaction
+    public abstract class Transaction
     {
-        public decimal Amount { get; private set; }
-        public TransactionType Type { get; private set; }
-
-        public Transaction(decimal amount, TransactionType type)
-        {
-            Amount = amount;
-            Type = type;
-        }
+        public decimal Amount { get; protected set; }
+        public TransactionType Type { get; protected set; }
+        public int AccountNumber { get; protected set; }
 
         public enum TransactionType
         {
