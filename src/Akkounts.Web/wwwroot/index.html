@@ -1,0 +1,96 @@
+﻿
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Technical Challenge: Luc">
+    <meta name="author" content="Luc">
+    <title>Technical Challenge: Luc</title>
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+    <script type="text/javascript" src="https://assets.moip.com.br/v2/moip-2.8.0.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/vue"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js"></script>
+    <script defer type="text/javascript" src="js/checkout.js"></script>
+</head>
+
+<body>
+    <div class="limit-grid">
+        <h1 class="header-devs__moip-logo" align="center"><a href="http://www.moip.com.br"><img src="https://cdn.moip.com.br/wp-content/uploads/2017/01/15232848/logo-moip-wirecard.png"></a></h1>
+    </div>
+
+    <div id="app" class="container">
+        <div class="row">
+            <h2 class="form-signin-heading" align="center">Order Checkout Page</h2>
+            <hr>
+            <div class="col-md-4 col-md-offset-1">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label>Payment type</label>
+                        <select v-model="Type">
+                            <option v-for="o in options" :value="o.value">
+                                {{ o.text }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Amount</label>
+                        <input type="number" v-model="Amount" class="form-control" /></br>
+                    </div>
+                </div>
+                <label>Buyer name</label>
+                <input type="text" v-model="Buyer.Name" class="form-control" /></br>
+                <label>Buyer cpf</label>
+                <input type="text" v-model="Buyer.Cpf" class="form-control" /></br>
+                <label>Buyer e-mail</label>
+                <input type="text" v-model="Buyer.Email" class="form-control" /></br>
+            </div>
+
+            <div class="col-md-6" v-if="Type=='CREDIT_CARD'">
+                <label>Credit card number</label>
+                <input type="text" v-model="Card.Number" class="form-control" /></br>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label>Holder name</label>
+                        <input type="text" v-model="Card.HolderName" class="form-control" /></br>
+                    </div>
+                    <div class="col-md-2">
+                        <label>CVV</label>
+                        <input type="text" v-model="Card.Cvv" class="form-control" /></br>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label>Expiration Month</label>
+                        <input type="number" v-model="ExpirationMonth" class="form-control" /></br>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Expiration Year</label>
+                        <input type="number" v-model="ExpirationYear" class="form-control" /></br>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Credit Card Brand</label>
+                        <input type="text" v-model="Brand" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-md-center">
+            <div class="col-md-2 col-md-offset-3">
+                <button @click="onAdd" class="btn btn-lg btn-primary btn-block">
+                    Add Payment
+                </button>
+            </div>
+            <div v-if="LocationLastPayment" class="col-md-5">
+                <button @click="onGet" class="btn btn-lg btn-primary btn-block">
+                    Get {{LocationLastPayment}}
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
