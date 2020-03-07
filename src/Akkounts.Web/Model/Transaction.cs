@@ -1,6 +1,6 @@
 using System;
 
-namespace Akkounts.Web
+namespace Akkounts.Web.Model
 {
     public class Transaction
     {

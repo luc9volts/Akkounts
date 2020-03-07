@@ -1,3 +1,4 @@
+using Akkounts.Web.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -19,7 +20,7 @@ namespace Akkounts.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            //services.AddSignalR();
+            services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -27,6 +28,11 @@ namespace Akkounts.Web
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
+            else
+            {
+                app.UseExceptionHandler("/Error");
+                app.UseHsts();
+            }
 
             app.UseStaticFiles();
             //app.UseHttpsRedirection();
@@ -36,6 +42,7 @@ namespace Akkounts.Web
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<NotificationHub>("/Hubs/notificationHub");
             });
         }
     }
