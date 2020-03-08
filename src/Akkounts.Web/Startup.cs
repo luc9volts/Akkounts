@@ -31,9 +31,11 @@ namespace Akkounts.Web
             {
                 var actorSystem = provider.GetService<ActorSystem>();
                 var hubContext = provider.GetService<IHubContext<NotificationHub>>();
-                
-                return () => actorSystem.ActorOf(Props.Create<AccountActor>(hubContext)
-                    .WithRouter(new ConsistentHashingPool(3)));
+                var theActor = actorSystem.ActorOf(Props.Create<AccountActor>(hubContext)
+                    .WithRouter(new ConsistentHashingPool(10, new DefaultResizer(1, 10),
+                        SupervisorStrategy.DefaultStrategy, null)));
+
+                return () => theActor;
             });
         }
 

@@ -19,7 +19,7 @@ namespace Akkounts.Web.Actors
 
         private void Ready()
         {
-            Context.SetReceiveTimeout(TimeSpan.FromSeconds(15));
+            Context.SetReceiveTimeout(TimeSpan.FromSeconds(20));
             
             Receive<Credit>(transaction =>
             {
