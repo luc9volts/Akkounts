@@ -1,9 +1,7 @@
-﻿using System.Threading.Tasks;
-using Akkounts.Web.Hubs;
+﻿using Akkounts.Web.Domain;
+using Akka.Actor;
+using Akkounts.Web.Actors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Akkounts.Web.Model;
-using Microsoft.AspNetCore.SignalR;
 
 namespace Akkounts.Web.Controllers
 {
@@ -11,19 +9,25 @@ namespace Akkounts.Web.Controllers
     [Route("[controller]")]
     public class AccountController : ControllerBase
     {
-        private readonly ILogger<AccountController> _logger;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        //private readonly ILogger<AccountController> _logger;
+        private readonly IActorRef _accountsRouterActor;
 
-        public AccountController(ILogger<AccountController> logger, IHubContext<NotificationHub> hubContext)
+        public AccountController(AccountsActorProvider accountsActorProvider)
         {
-            _logger = logger;
-            _hubContext = hubContext;
+            //_logger = logger;
+            _accountsRouterActor = accountsActorProvider();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Transaction t)
+        public IActionResult Post([FromBody] Transaction t)
         {
-            await _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions", t.Amount, t.AccountNumber);
+            var message = t.Type.Equals(Transaction.TransactionType.Credit)
+                ? (AccountActor.TransactionMessage) new AccountActor.Credit(t.AccountNumber, t.Amount)
+                : new AccountActor.Debit(t.AccountNumber, t.Amount);
+
+            _accountsRouterActor.Tell(message);
+
+            //await _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions", t.Amount, t.AccountNumber);
             return Accepted(t);
         }
     }

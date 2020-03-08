@@ -1,6 +1,10 @@
+using Akka.Actor;
+using Akka.Routing;
+using Akkounts.Web.Actors;
 using Akkounts.Web.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,10 +25,20 @@ namespace Akkounts.Web
         {
             services.AddControllers();
             services.AddSignalR();
+            services.AddSingleton(_ => ActorSystem.Create("akkountsProj"));
+
+            services.AddSingleton<AccountsActorProvider>(provider =>
+            {
+                var actorSystem = provider.GetService<ActorSystem>();
+                var hubContext = provider.GetService<IHubContext<NotificationHub>>();
+                
+                return () => actorSystem.ActorOf(Props.Create<AccountActor>(hubContext)
+                    .WithRouter(new ConsistentHashingPool(3)));
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifetime)
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
@@ -44,6 +58,12 @@ namespace Akkounts.Web
                 endpoints.MapControllers();
                 endpoints.MapHub<NotificationHub>("/Hubs/notificationHub");
             });
+
+            lifetime.ApplicationStarted.Register(() =>
+                app.ApplicationServices.GetService<ActorSystem>());
+
+            lifetime.ApplicationStopping.Register(() =>
+                app.ApplicationServices.GetService<ActorSystem>().Terminate().Wait());
         }
     }
 }

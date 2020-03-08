@@ -2,9 +2,13 @@
 <script>
     var connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
 
+
     connection.on("ReceiveAccountsTransactions", function (user, message) {
-        alert(message);
-        alert(user);
+        var node = document.createElement("LI");                 // Create a <li> node
+        var textnode = document.createTextNode(message);         // Create a text node
+
+        node.appendChild(textnode);                              // Append the text to <li>
+        document.getElementById("myList").appendChild(node);
     });
 
     connection.start().then(function () {
@@ -12,11 +16,10 @@
     }).catch(function (err) {
         return console.error(err.toString());
     });
-
 </script>
 <html lang="en">
-<p>Teste</p>
 <body>
-
+    <ul id="myList">
+    </ul>
 </body>
 </html>

@@ -4,7 +4,7 @@ namespace Akkounts.Publisher.Model
     {
         public decimal Amount { get; protected set; }
         public TransactionType Type { get; protected set; }
-        public int AccountNumber { get; protected set; }
+        public string AccountNumber { get; protected set; }
 
         public enum TransactionType
         {
