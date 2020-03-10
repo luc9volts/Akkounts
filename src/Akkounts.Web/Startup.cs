@@ -31,10 +31,11 @@ namespace Akkounts.Web
             {
                 var actorSystem = provider.GetService<ActorSystem>();
                 var hubContext = provider.GetService<IHubContext<NotificationHub>>();
-                var theActor = actorSystem.ActorOf(Props.Create<AccountActor>(hubContext)
-                    .WithRouter(new ConsistentHashingPool(10, new DefaultResizer(1, 10),
-                        SupervisorStrategy.DefaultStrategy, null)));
-
+                //var logger = provider.GetService<ILogger<AccountController>>(); 
+                
+                var props = Props.Create<ConsistentAccountPool>(hubContext);
+                var theActor = actorSystem.ActorOf(props, "MainPool");                
+                
                 return () => theActor;
             });
         }

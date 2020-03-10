@@ -19,32 +19,31 @@ namespace Akkounts.Web.Actors
 
         private void Ready()
         {
-            Context.SetReceiveTimeout(TimeSpan.FromSeconds(20));
-            
+            Context.SetReceiveTimeout(TimeSpan.FromSeconds(50));
+
             Receive<Credit>(transaction =>
             {
-                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions", transaction.Amount,
-                    transaction.Account);
+                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions",
+                    $"{Context.Self.Path} {transaction.Amount} {transaction.Account}");
             });
 
             Receive<Debit>(transaction =>
             {
-                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions", transaction.Amount,
-                    transaction.Account);
+                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions",
+                    $"{Context.Self.Path} {transaction.Amount} {transaction.Account}");
             });
 
             Receive<ReceiveTimeout>(timeout =>
             {
-                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions", 0, "Fim");
-                // shut self down
+                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions", $"{Context.Self.Path} Fim");
                 Context.Stop(Self);
             });
         }
 
         public abstract class TransactionMessage : IConsistentHashable
         {
-            public string Account { get; private set; }
-            public decimal Amount { get; private set; }
+            public string Account { get; }
+            public decimal Amount { get; }
 
             protected TransactionMessage(string account, decimal amount)
             {

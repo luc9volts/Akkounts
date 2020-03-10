@@ -2,8 +2,7 @@
 <script>
     var connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
 
-
-    connection.on("ReceiveAccountsTransactions", function (user, message) {
+    connection.on("ReceiveAccountsTransactions", function (message) {
         var node = document.createElement("LI");                 // Create a <li> node
         var textnode = document.createTextNode(message);         // Create a text node
 

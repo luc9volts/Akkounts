@@ -10,24 +10,17 @@ namespace Akkounts.Web.Controllers
     public class AccountController : ControllerBase
     {
         //private readonly ILogger<AccountController> _logger;
-        private readonly IActorRef _accountsRouterActor;
+        private readonly IActorRef _accountsPool;
 
         public AccountController(AccountsActorProvider accountsActorProvider)
         {
-            //_logger = logger;
-            _accountsRouterActor = accountsActorProvider();
+            _accountsPool = accountsActorProvider();
         }
 
         [HttpPost]
         public IActionResult Post([FromBody] Transaction t)
         {
-            var message = t.Type.Equals(Transaction.TransactionType.Credit)
-                ? (AccountActor.TransactionMessage) new AccountActor.Credit(t.AccountNumber, t.Amount)
-                : new AccountActor.Debit(t.AccountNumber, t.Amount);
-
-            _accountsRouterActor.Tell(message);
-
-            //await _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions", t.Amount, t.AccountNumber);
+            _accountsPool.Tell(t);
             return Accepted(t);
         }
     }
