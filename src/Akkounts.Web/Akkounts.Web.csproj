@@ -10,6 +10,24 @@
 
   <ItemGroup>
     <Compile Remove="Actors\AccountsCoordinatorActor.cs" />
+    <Compile Remove="Domain\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="mono_crash.mem.11382.1.blob" />
+    <None Remove="Domain\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Domain\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Domain\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Akkounts.Domain\Akkounts.Domain.csproj" />
   </ItemGroup>
 
 

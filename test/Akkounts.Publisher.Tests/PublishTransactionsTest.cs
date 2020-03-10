@@ -18,7 +18,7 @@ namespace Akkounts.Publisher.Tests
         {
             var transactionsFactory = new TransactionsFactory();
             var transactions = transactionsFactory.GetTransactions().Take(50).ToList();
-            Assert.True(transactions.All(t => t.AccountNumber > 0 && t.AccountNumber <= 100));
+            Assert.True(transactions.All(t => int.Parse(t.AccountNumber.Substring(3)) > 0 && int.Parse(t.AccountNumber.Substring(3)) <= 100));
         }
 
         [Theory]

@@ -1,5 +1,5 @@
-﻿using Akkounts.Web.Domain;
-using Akka.Actor;
+﻿using Akka.Actor;
+using Akkounts.Domain;
 using Akkounts.Web.Actors;
 using Microsoft.AspNetCore.Mvc;
 

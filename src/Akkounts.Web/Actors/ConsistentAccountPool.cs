@@ -1,5 +1,5 @@
 using Akka.Actor;
-using Akkounts.Web.Domain;
+using Akkounts.Domain;
 using Akkounts.Web.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
