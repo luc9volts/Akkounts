@@ -1,18 +1,15 @@
 using Akka.Actor;
+using Akka.DI.Core;
 using Akkounts.Domain;
-using Akkounts.Web.Hubs;
-using Microsoft.AspNetCore.SignalR;
 
 namespace Akkounts.Web.Actors
 {
     public class ConsistentAccountPool : ReceiveActor, IWithUnboundedStash
     {
-        private readonly IHubContext<NotificationHub> _hubContext;
         public IStash Stash { get; set; }
 
-        public ConsistentAccountPool(IHubContext<NotificationHub> hubContext)
+        public ConsistentAccountPool()
         {
-            _hubContext = hubContext;
             Ready();
         }
 
@@ -25,17 +22,16 @@ namespace Akkounts.Web.Actors
                     : new AccountActor.Debit(t.AccountNumber, t.Amount);
                 
                 var child = GetChildActor(message.ConsistentHashKey.ToString());
-
                 child.Tell(message);
             });
         }
 
-        private IActorRef GetChildActor(string actorName)
+        private static IActorRef GetChildActor(string actorName)
         {
             var child = Context.Child(actorName);
-
+            
             return child is Nobody
-                ? Context.ActorOf(Props.Create<AccountActor>(_hubContext), actorName)
+                ? Context.ActorOf(Context.DI().Props<AccountActor>(), actorName)
                 : child;
         }
     }

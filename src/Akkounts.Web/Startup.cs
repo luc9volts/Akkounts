@@ -1,4 +1,8 @@
 using Akka.Actor;
+using Akka.DI.Core;
+using Akka.DI.Ninject;
+using Akkounts.DataAccess;
+using Akkounts.Domain.Abstract;
 using Akkounts.Web.Actors;
 using Akkounts.Web.Hubs;
 using Microsoft.AspNetCore.Builder;
@@ -7,6 +11,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Ninject;
 
 namespace Akkounts.Web
 {
@@ -24,17 +29,29 @@ namespace Akkounts.Web
         {
             services.AddControllers();
             services.AddSignalR();
-            services.AddSingleton(_ => ActorSystem.Create("akkountsProj"));
+            services.AddSingleton(provider =>
+            {
+                var container = new StandardKernel();
+                container.Bind<TransactionRepository>().To<TransactionRepositoryImpl>();
+
+                var hubContext = provider.GetService<IHubContext<NotificationHub>>();
+                container.Bind<IHubContext<NotificationHub>>().ToConstant(hubContext);
+
+                var actorSystem = ActorSystem.Create("AkkountsSystem");
+                var resolver = new NinjectDependencyResolver(container, actorSystem);
+
+                return actorSystem;
+            });
 
             services.AddSingleton<AccountsActorProvider>(provider =>
             {
                 var actorSystem = provider.GetService<ActorSystem>();
-                var hubContext = provider.GetService<IHubContext<NotificationHub>>();
+                //var hubContext = provider.GetService<IHubContext<NotificationHub>>();
                 //var logger = provider.GetService<ILogger<AccountController>>(); 
-                
-                var props = Props.Create<ConsistentAccountPool>(hubContext);
-                var theActor = actorSystem.ActorOf(props, "MainPool");                
-                
+
+                var props = actorSystem.DI().Props<ConsistentAccountPool>();
+                var theActor = actorSystem.ActorOf(props, "MainPoolActor");
+
                 return () => theActor;
             });
         }

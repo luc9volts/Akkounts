@@ -1,6 +1,9 @@
 using System;
+using System.Linq;
 using Akka.Actor;
 using Akka.Routing;
+using Akkounts.Domain;
+using Akkounts.Domain.Abstract;
 using Akkounts.Web.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
@@ -10,10 +13,12 @@ namespace Akkounts.Web.Actors
     {
         public IStash Stash { get; set; }
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly TransactionRepository _repository;
 
-        public AccountActor(IHubContext<NotificationHub> hubContext)
+        public AccountActor(IHubContext<NotificationHub> hubContext, TransactionRepository repository)
         {
             _hubContext = hubContext;
+            _repository = repository;
             Ready();
         }
 
@@ -23,14 +28,28 @@ namespace Akkounts.Web.Actors
 
             Receive<Credit>(transaction =>
             {
+                _repository.Add(new Transaction
+                {
+                    AccountNumber = transaction.Account,
+                    Amount = 150
+                });
+                var sum = _repository.GetAllBy(transaction.Account).Sum(t => t.Amount);
+
                 _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions",
-                    $"{Context.Self.Path} {transaction.Amount} {transaction.Account}");
+                    $"{Context.Self.Path} {sum}");
             });
 
             Receive<Debit>(transaction =>
             {
+                _repository.Add(new Transaction
+                {
+                    AccountNumber = transaction.Account,
+                    Amount = 100
+                });
+                var sum = _repository.GetAllBy(transaction.Account).Sum(t => t.Amount);
+
                 _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions",
-                    $"{Context.Self.Path} {transaction.Amount} {transaction.Account}");
+                    $"{Context.Self.Path} {sum}");
             });
 
             Receive<ReceiveTimeout>(timeout =>
