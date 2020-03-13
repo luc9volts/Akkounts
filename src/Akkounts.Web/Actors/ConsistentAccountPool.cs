@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.DI.Core;
 using Akkounts.Domain;
+using Akkounts.Web.ActorsMessages;
 
 namespace Akkounts.Web.Actors
 {
@@ -15,11 +16,11 @@ namespace Akkounts.Web.Actors
 
         private void Ready()
         {
-            Receive<Transaction>(t =>
+            Receive<Transaction>(txn =>
             {
-                var message = t.Type.Equals(Transaction.TransactionType.Credit)
-                    ? (AccountActor.TransactionMessage) new AccountActor.Credit(t.AccountNumber, t.Amount)
-                    : new AccountActor.Debit(t.AccountNumber, t.Amount);
+                var message = txn.Type.Equals(Transaction.TransactionType.Credit)
+                    ? (TransactionMessage) new Credit(txn.AccountNumber, txn.Amount, txn.StartDate)
+                    : new Debit(txn.AccountNumber, txn.Amount, txn.StartDate);
                 
                 var child = GetChildActor(message.ConsistentHashKey.ToString());
                 child.Tell(message);

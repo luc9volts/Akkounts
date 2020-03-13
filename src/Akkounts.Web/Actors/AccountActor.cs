@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
 using Akka.Actor;
-using Akka.Routing;
 using Akkounts.Domain;
 using Akkounts.Domain.Abstract;
+using Akkounts.Web.ActorsMessages;
 using Akkounts.Web.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
@@ -24,67 +24,63 @@ namespace Akkounts.Web.Actors
 
         private void Ready()
         {
-            Context.SetReceiveTimeout(TimeSpan.FromSeconds(50));
+            Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
 
-            Receive<Credit>(transaction =>
+            Receive<Credit>(txnMessage =>
             {
-                _repository.Add(new Transaction
-                {
-                    AccountNumber = transaction.Account,
-                    Amount = 150
-                });
-                var sum = _repository.GetAllBy(transaction.Account).Sum(t => t.Amount);
+                SaveTransaction(txnMessage);
 
-                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions",
-                    $"{Context.Self.Path} {sum}");
+                NotifyClients(new
+                {
+                    txnMessage.Account,
+                    Balance = GetBalance(txnMessage.Account),
+                    TxnRefused = false
+                });
             });
 
-            Receive<Debit>(transaction =>
+            Receive<Debit>(txnMessage =>
             {
-                _repository.Add(new Transaction
-                {
-                    AccountNumber = transaction.Account,
-                    Amount = 100
-                });
-                var sum = _repository.GetAllBy(transaction.Account).Sum(t => t.Amount);
+                SaveTransaction(txnMessage);
 
-                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions",
-                    $"{Context.Self.Path} {sum}");
+                NotifyClients(new
+                {
+                    txnMessage.Account,
+                    Balance = GetBalance(txnMessage.Account),
+                    TxnRefused = false
+                });
             });
 
             Receive<ReceiveTimeout>(timeout =>
             {
-                _hubContext.Clients.All.SendAsync("ReceiveAccountsTransactions", $"{Context.Self.Path} Fim");
+                NotifyClientsActorIdle();
                 Context.Stop(Self);
             });
         }
 
-        public abstract class TransactionMessage : IConsistentHashable
+        private void SaveTransaction(TransactionMessage txnMessage)
         {
-            public string Account { get; }
-            public decimal Amount { get; }
-
-            protected TransactionMessage(string account, decimal amount)
+            _repository.Add(new Transaction
             {
-                Account = account;
-                Amount = amount;
-            }
-
-            public object ConsistentHashKey => Account;
+                AccountNumber = txnMessage.Account,
+                Amount = txnMessage.Amount,
+                StartDate = txnMessage.StartDate
+            });
         }
 
-        public class Credit : TransactionMessage
+        private decimal GetBalance(string accountNumber)
         {
-            public Credit(string account, decimal amount) : base(account, amount)
-            {
-            }
+            return _repository.GetAllBy(accountNumber).Sum(t => t.Amount);
         }
 
-        public class Debit : TransactionMessage
+        private void NotifyClients(object info)
         {
-            public Debit(string account, decimal amount) : base(account, amount)
-            {
-            }
+            _hubContext.Clients.All.SendAsync("ReceiveTxnInfo", info);
+        }
+
+        private void NotifyClientsActorIdle()
+        {
+            var account = Context.Self.Path.ToString();
+            _hubContext.Clients.All.SendAsync("ReceiveIdleInfo", account.Substring(account.LastIndexOf('/') + 1));
         }
     }
 }

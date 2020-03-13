@@ -2,11 +2,19 @@
 <script>
     var connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
 
-    connection.on("ReceiveAccountsTransactions", function (message) {
-        var node = document.createElement("LI");                 // Create a <li> node
-        var textnode = document.createTextNode(message);         // Create a text node
+    connection.on("ReceiveTxnInfo", function (txnInfo) {
+        var node = document.createElement("LI");
+        var textnode = document.createTextNode(`${txnInfo.account} - ${txnInfo.balance}`);
 
-        node.appendChild(textnode);                              // Append the text to <li>
+        node.appendChild(textnode);
+        document.getElementById("myList").appendChild(node);
+    });
+
+    connection.on("ReceiveIdleInfo", function (actorName) {
+        var node = document.createElement("LI");
+        var textnode = document.createTextNode(`${actorName} - IDLE`);
+
+        node.appendChild(textnode);
         document.getElementById("myList").appendChild(node);
     });
 
@@ -18,7 +26,7 @@
 </script>
 <html lang="en">
 <body>
-    <ul id="myList">
-    </ul>
+<ul id="myList">
+</ul>
 </body>
 </html>
