@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Akka.Actor;
 using Akkounts.Domain;
 using Akkounts.Domain.Abstract;
@@ -33,20 +32,25 @@ namespace Akkounts.Web.Actors
                 NotifyClients(new
                 {
                     txnMessage.Account,
-                    Balance = GetBalance(txnMessage.Account),
-                    TxnRefused = false
+                    txnMessage.Amount,
+                    Balance = _repository.GetBalance(txnMessage.Account).Amount,
+                    TxnAccepted = true
                 });
             });
 
             Receive<Debit>(txnMessage =>
             {
-                SaveTransaction(txnMessage);
+                var balance = _repository.GetBalance(txnMessage.Account);
+
+                if (balance.IsTransactionAllowed(txnMessage.Amount))
+                    SaveTransaction(txnMessage);
 
                 NotifyClients(new
                 {
                     txnMessage.Account,
-                    Balance = GetBalance(txnMessage.Account),
-                    TxnRefused = false
+                    txnMessage.Amount,
+                    Balance = balance.Amount,
+                    TxnAccepted = balance.IsTransactionAllowed(txnMessage.Amount)
                 });
             });
 
@@ -65,11 +69,6 @@ namespace Akkounts.Web.Actors
                 Amount = txnMessage.Amount,
                 StartDate = txnMessage.StartDate
             });
-        }
-
-        private decimal GetBalance(string accountNumber)
-        {
-            return _repository.GetAllBy(accountNumber).Sum(t => t.Amount);
         }
 
         private void NotifyClients(object info)

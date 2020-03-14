@@ -4,7 +4,7 @@
 
     connection.on("ReceiveTxnInfo", function (txnInfo) {
         var node = document.createElement("LI");
-        var textnode = document.createTextNode(`${txnInfo.account} - ${txnInfo.balance}`);
+        var textnode = document.createTextNode(`${txnInfo.account}  ${txnInfo.amount}  ${txnInfo.balance}  ${txnInfo.txnAccepted}`);
 
         node.appendChild(textnode);
         document.getElementById("myList").appendChild(node);

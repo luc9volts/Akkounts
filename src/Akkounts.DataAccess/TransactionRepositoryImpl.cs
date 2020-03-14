@@ -17,7 +17,13 @@ namespace Akkounts.DataAccess
             col.Insert(t);
         }
 
-        public IEnumerable<Transaction> GetAllBy(string account)
+        public Balance GetBalance(string account)
+        {
+            var value = GetAllBy(account).Sum(txn => txn.Amount);
+            return new Balance(value);
+        }
+
+        private static IEnumerable<Transaction> GetAllBy(string account)
         {
             using var db = new LiteDatabase(DbName);
             var col = db.GetCollection<Transaction>(account);
