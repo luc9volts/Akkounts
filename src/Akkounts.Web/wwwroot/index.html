@@ -1,32 +1,18 @@
-﻿<script src="js/signalr/dist/browser/signalr.js"></script>
-<script>
-    var connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
-
-    connection.on("ReceiveTxnInfo", function (txnInfo) {
-        var node = document.createElement("LI");
-        var textnode = document.createTextNode(`${txnInfo.account}  ${txnInfo.amount}  ${txnInfo.balance}  ${txnInfo.txnAccepted}`);
-
-        node.appendChild(textnode);
-        document.getElementById("myList").appendChild(node);
-    });
-
-    connection.on("ReceiveIdleInfo", function (actorName) {
-        var node = document.createElement("LI");
-        var textnode = document.createTextNode(`${actorName} - IDLE`);
-
-        node.appendChild(textnode);
-        document.getElementById("myList").appendChild(node);
-    });
-
-    connection.start().then(function () {
-        alert("ok");
-    }).catch(function (err) {
-        return console.error(err.toString());
-    });
-</script>
+﻿<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+    text {
+        font: 10px sans-serif;
+    }
+</style>
 <html lang="en">
+
 <body>
-<ul id="myList">
-</ul>
+    <ul id="myList">
+    </ul>
+    <script src="//d3js.org/d3.v4.js"></script>
+    <script src="js/signalr/dist/browser/signalr.js"></script>
+    <script src="js/akkounts.js"></script>
 </body>
+
 </html>
