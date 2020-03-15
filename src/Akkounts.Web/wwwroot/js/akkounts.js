@@ -19,21 +19,22 @@ connection.on("ReceiveIdleInfo", actorName => {
     document.getElementById("myList").appendChild(node);
 });
 
-var diameter = 960,
+const width = 1200,
+    height = 800,
     format = d3.format(",d"),
-    initial_data = {
-        children: []
-    },
-    color = d3.scaleOrdinal(d3.schemeCategory20c);
+    color = d3.scaleOrdinal(d3.schemeCategory20c),
+    circleRadiusScale = d3.scaleSqrt()
+        .domain([0, 100])
+        .range([0, 100]);
 
 var bubble = d3.pack()
-    .size([diameter, diameter])
-    .padding(1.5);
-
-var svg = d3.select("body").append("svg")
-    .attr("width", diameter)
-    .attr("height", diameter)
-    .attr("class", "bubble");
+    .size([width, height])
+    .padding(2),
+    svg = d3.select("body").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("class", "bubble"),
+    initial_data = { children: [] };
 
 const plot = (data, svg) => {
 
@@ -49,15 +50,16 @@ const plot = (data, svg) => {
         .data(root.children)
         .enter().append("g")
         .attr("class", "node")
-        .attr("transform", d => {
-            return "translate(" + d.x + "," + d.y + ")";
-        });
+        .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
 
     node.append("title")
         .text(d => d.data.balance + ": " + format(d.value));
 
+    var sum = data.children.reduce((acc, elem) => acc + elem.balance, 0);
+    circleRadiusScale.domain([0, sum]);
+
     node.append("circle")
-        .attr("r", function (d) { return d.r; })
+        .attr("r", d => circleRadiusScale(d.data.balance))
         .style("fill", d => color(d.data.account));
 
     node.append("text")
@@ -66,4 +68,4 @@ const plot = (data, svg) => {
         .text(d => d.data.account.substring(0, d.r / 3));
 };
 
-d3.select(self.frameElement).style("height", diameter + "px");
+d3.select(self.frameElement).style("height", width + "px");
