@@ -1,4 +1,27 @@
-﻿const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
+﻿//connect with server via signalr
+const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
+connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
+
+const addBubbleEvents = Bacon.fromBinder(sink => {
+    connection.on("ReceiveTxnInfo", txnInfo => {
+        sink(() => {
+            initial_data.children.push(txnInfo);
+            plot(initial_data, svg);
+        });
+    });
+});
+
+const removeBubbleEvents = Bacon.fromBinder(sink => {
+    connection.on("ReceiveIdleInfo", actorName => {
+        sink(() => {
+            initial_data.children = initial_data.children.filter(o => o.account != actorName);
+            plot(initial_data, svg);
+        });
+    });
+});
+
+const bubbleEvents = addBubbleEvents.merge(removeBubbleEvents);
+bubbleEvents.onValue(f => f());
 
 const width = 1200,
     height = 800,
@@ -15,19 +38,6 @@ const width = 1200,
         .attr("height", height)
         .attr("class", "bubble"),
     initial_data = { children: [] };
-
-connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
-
-connection.on("ReceiveTxnInfo", txnInfo => {
-    initial_data.children.push(txnInfo);
-    plot(initial_data, svg);
-});
-
-connection.on("ReceiveIdleInfo", actorName => {
-    plot({
-        children: initial_data.children.filter(o => o.account != actorName)
-    }, svg);
-});
 
 const plot = (data, svg) => {
 
