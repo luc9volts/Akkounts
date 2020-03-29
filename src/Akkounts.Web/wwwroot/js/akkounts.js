@@ -1,29 +1,4 @@
-﻿//connect with server via signalr
-const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
-connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
-
-const addBubbleEvents = Bacon.fromBinder(sink => {
-    connection.on("ReceiveTxnInfo", txnInfo => {
-        sink(() => {
-            initial_data.children.push(txnInfo);
-            plot(initial_data, svg);
-        });
-    });
-});
-
-const removeBubbleEvents = Bacon.fromBinder(sink => {
-    connection.on("ReceiveIdleInfo", actorName => {
-        sink(() => {
-            initial_data.children = initial_data.children.filter(o => o.account != actorName);
-            plot(initial_data, svg);
-        });
-    });
-});
-
-const bubbleEvents = addBubbleEvents.merge(removeBubbleEvents);
-bubbleEvents.onValue(f => f());
-
-const width = 1200,
+﻿const width = 1200,
     height = 800,
     format = d3.format(",d"),
     color = d3.scaleOrdinal(d3.schemeCategory20c),
@@ -37,7 +12,7 @@ const width = 1200,
         .attr("width", width)
         .attr("height", height)
         .attr("class", "bubble"),
-    initial_data = { children: [] };
+    bubbleDataState = { children: [] };
 
 const plot = (data, svg) => {
 
@@ -75,3 +50,34 @@ const plot = (data, svg) => {
 };
 
 d3.select(self.frameElement).style("height", width + "px");
+
+//connect with server via signalr
+const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
+connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
+
+const addBubble = txnInfo => {
+    bubbleDataState.children.push(txnInfo);
+    plot(bubbleDataState, svg);
+};
+
+const removeBubble = account => {
+    bubbleDataState.children = bubbleDataState.children.filter(o => o.account != account);
+    plot(bubbleDataState, svg);
+};
+
+const addBubbleEvents = Bacon.fromBinder(sink => {
+    connection.on("ReceiveTxnInfo", txnInfo => sink(txnInfo));
+});
+
+const removeBubbleEvents = Bacon.fromBinder(sink => {
+    connection.on("ReceiveIdleInfo", account => sink(account));
+});
+
+const bubbleEvents = addBubbleEvents.merge(removeBubbleEvents);
+
+bubbleEvents.onValue(bubbleData => {
+    if (bubbleData.account)
+        addBubble(bubbleData);
+    else
+        removeBubble(bubbleData);
+});
