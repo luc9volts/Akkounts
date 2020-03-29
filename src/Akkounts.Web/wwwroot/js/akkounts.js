@@ -1,44 +1,46 @@
-﻿const width = 960,
-    height = 500,
-    bubbleDataState = [{ radius: 0, fixed: true }, { account: "ACC0100", balance: 200 }, { account: "ACC0950", balance: 250 }],
-    circleRadiusScale = d3.scale.sqrt()
+﻿class Bubble {
+    static #color = d3.scale.category20();
+    static #circleRadiusScale = d3.scale.sqrt()
         .domain([0, 250])
-        .range([0, 50]),
-    nodes = bubbleDataState.map(d => {
-        d.radius = circleRadiusScale(d.balance);
-        d.fixed = false;
-        return d;
-    }),
-    root = nodes[0],
-    color = d3.scale.category10(),
+        .range([0, 50]);
+
+    constructor(size, fixed) {
+        this.radius = Bubble.#circleRadiusScale(size);
+        this.fixed = fixed == undefined ? false : fixed;
+    }
+
+    getColor = i => Bubble.#color(i % 3);
+}
+
+const width = 960,
+    height = 500,
+    bubbleDataState = [new Bubble(0, true), new Bubble(200), new Bubble(250)],
+    root = bubbleDataState[0],
     svg = d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height);
 
-root.radius = 0;
-root.fixed = true;
-
 const plot = () => {
     let circle = svg.selectAll("circle")
-        .data(nodes.slice(1));
+        .data(bubbleDataState.slice(1));
 
     circle.exit().remove();
 
     circle.enter().append("circle")
         .attr("r", d => d.radius)
-        .style("fill", (d, i) => color(i % 3));
+        .style("fill", (d, i) => d.getColor(i % 3));
 
-    force.nodes(nodes);
+    force.nodes(bubbleDataState);
     tick();
     force.start();
 }
 
 const tick = () => {
-    var q = d3.geom.quadtree(nodes),
+    var q = d3.geom.quadtree(bubbleDataState),
         i = 0,
-        n = nodes.length;
+        n = bubbleDataState.length;
 
-    while (++i < n) q.visit(collide(nodes[i]));
+    while (++i < n) q.visit(collide(bubbleDataState[i]));
 
     svg.selectAll("circle")
         .attr("cx", d => d.x)
@@ -72,21 +74,20 @@ const collide = node => {
 const force = d3.layout.force()
     .gravity(0.05)
     .charge((d, i) => i ? 0 : -2000)
-    .nodes(nodes)
+    .nodes(bubbleDataState)
     .size([width, height])
     .on("tick", tick);
 
-plot(nodes, svg);
+plot();
 
 window.setTimeout(() => {
-    nodes.push({ account: "ACC0500", balance: 150, radius: circleRadiusScale(150), fixed: false });
-    //nodes.pop();
-    plot(nodes, svg);
+    bubbleDataState.push(new Bubble(150));
+    plot();
 }, 3000);
 
 window.setTimeout(() => {
-    nodes.pop();
-    plot(nodes, svg);
+    bubbleDataState.pop();
+    plot();
 }, 6000);
 
 // const width = 1200,
