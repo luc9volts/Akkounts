@@ -65,6 +65,7 @@ const removeBubble = account => {
     plot(bubbleDataState, svg);
 };
 
+//serializing server events
 const addBubbleEvents = Bacon.fromBinder(sink => {
     connection.on("ReceiveTxnInfo", txnInfo => sink(txnInfo));
 });
