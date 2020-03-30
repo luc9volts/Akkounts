@@ -1,10 +1,15 @@
 ﻿class Bubble {
-    static #color = d3.scale.category20();
-    static #circleRadiusScale = d3.scale.sqrt()
-        .domain([0, 250])
-        .range([0, 50]);
+    static #domainEdge = 0;
+    static #color = d3.scale.category10();
+    static #circleRadiusScale = d3.scale.sqrt().range([0, 50]);
+    static #updateDomain = value => {
+        Bubble.#domainEdge = value > Bubble.#domainEdge ? value : Bubble.#domainEdge;
+        Bubble.#circleRadiusScale.domain([0, Bubble.#domainEdge]);
+    }
 
-    constructor(size, fixed) {
+    constructor(name, size, fixed) {
+        Bubble.#updateDomain(size);
+        this.name = name;
         this.radius = Bubble.#circleRadiusScale(size);
         this.fixed = fixed == undefined ? false : fixed;
     }
@@ -14,21 +19,20 @@
 
 const width = 960,
     height = 500,
-    bubbleDataState = [new Bubble(0, true), new Bubble(200), new Bubble(250)],
+    bubbleDataState = [new Bubble("root", 0, true)],
     root = bubbleDataState[0],
     svg = d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height);
 
 const plot = () => {
-    let circle = svg.selectAll("circle")
-        .data(bubbleDataState.slice(1));
+    let circle = svg.selectAll("circle").data(bubbleDataState.slice(1));
 
     circle.exit().remove();
 
     circle.enter().append("circle")
         .attr("r", d => d.radius)
-        .style("fill", (d, i) => d.getColor(i % 3));
+        .style("fill", (d, i) => d.getColor(i));
 
     force.nodes(bubbleDataState);
     tick();
@@ -78,17 +82,43 @@ const force = d3.layout.force()
     .size([width, height])
     .on("tick", tick);
 
+bubbleDataState.push(new Bubble("ACC205", 205));
+bubbleDataState.push(new Bubble("ACC207", 850));
 plot();
 
-window.setTimeout(() => {
-    bubbleDataState.push(new Bubble(150));
-    plot();
-}, 3000);
+//setTimeout(function(){ plot(); }, 6000);
 
-window.setTimeout(() => {
-    bubbleDataState.pop();
+//connect with server via signalr
+const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
+//connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
+
+const addBubble = txnInfo => {
+    bubbleDataState.push(new Bubble(txnInfo.account, txnInfo.balance));
+};
+
+const removeBubble = account => {
+    bubbleDataState = bubbleDataState.filter(o => o.name != account);
+};
+
+//serializing server events
+const addBubbleEvents = Bacon.fromBinder(sink => {
+    connection.on("ReceiveTxnInfo", txnInfo => sink(txnInfo));
+});
+
+const removeBubbleEvents = Bacon.fromBinder(sink => {
+    connection.on("ReceiveIdleInfo", account => sink(account));
+});
+
+const bubbleEvents = addBubbleEvents.merge(removeBubbleEvents);
+
+bubbleEvents.onValue(bubbleData => {
+    if (bubbleData.account)
+        addBubble(bubbleData);
+    else
+        removeBubble(bubbleData);
+
     plot();
-}, 6000);
+});
 
 // const width = 1200,
 //     height = 800,
@@ -143,34 +173,3 @@ window.setTimeout(() => {
 
 // d3.select(self.frameElement).style("height", width + "px");
 
-//connect with server via signalr
-const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
-//connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
-
-const addBubble = txnInfo => {
-    bubbleDataState.children.push(txnInfo);
-    plot(bubbleDataState, svg);
-};
-
-const removeBubble = account => {
-    bubbleDataState.children = bubbleDataState.children.filter(o => o.account != account);
-    plot(bubbleDataState, svg);
-};
-
-//serializing server events
-const addBubbleEvents = Bacon.fromBinder(sink => {
-    connection.on("ReceiveTxnInfo", txnInfo => sink(txnInfo));
-});
-
-const removeBubbleEvents = Bacon.fromBinder(sink => {
-    connection.on("ReceiveIdleInfo", account => sink(account));
-});
-
-const bubbleEvents = addBubbleEvents.merge(removeBubbleEvents);
-
-bubbleEvents.onValue(bubbleData => {
-    if (bubbleData.account)
-        addBubble(bubbleData);
-    else
-        removeBubble(bubbleData);
-});
