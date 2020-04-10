@@ -1,55 +1,24 @@
 ﻿class Bubble {
-    static #domainEdge = 0;
-    static #color = d3.scale.category10();
-    static #circleRadiusScale = d3.scale.sqrt().range([0, 50]);
-    static #updateDomain = value => {
-        Bubble.#domainEdge = value > Bubble.#domainEdge ? value : Bubble.#domainEdge;
-        Bubble.#circleRadiusScale.domain([0, Bubble.#domainEdge]);
-    }
+    static #color = d3.scale.category20c();
+    static #circleRadiusScale = d3.scale.sqrt()
+        .domain([0, 1000])
+        .range([0, 50]);
 
-    constructor(name, size, fixed) {
-        Bubble.#updateDomain(size);
+    constructor(name, size) {
         this.name = name;
         this.radius = Bubble.#circleRadiusScale(size);
-        this.fixed = fixed == undefined ? false : fixed;
+        this.getColor = i => Bubble.#color(i);
     }
-
-    getColor = i => Bubble.#color(i % 3);
 }
 
-const width = 960,
-    height = 500,
-    bubbleDataState = [new Bubble("root", 0, true)],
-    root = bubbleDataState[0],
+const width = window.innerWidth,
+    height = window.innerHeight,
     svg = d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height);
 
-const plot = () => {
-    let circle = svg.selectAll("circle").data(bubbleDataState.slice(1));
-
-    circle.exit().remove();
-
-    circle.enter().append("circle")
-        .attr("r", d => d.radius)
-        .style("fill", (d, i) => d.getColor(i));
-
-    force.nodes(bubbleDataState);
-    tick();
-    force.start();
-}
-
-const tick = () => {
-    var q = d3.geom.quadtree(bubbleDataState),
-        i = 0,
-        n = bubbleDataState.length;
-
-    while (++i < n) q.visit(collide(bubbleDataState[i]));
-
-    svg.selectAll("circle")
-        .attr("cx", d => d.x)
-        .attr("cy", d => d.y);
-}
+let circles = svg.selectAll('circle'),
+    bubbleDataState = [];
 
 const collide = node => {
     var r = node.radius + 16,
@@ -72,28 +41,50 @@ const collide = node => {
             }
         }
         return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
-    };
+    }
 };
 
 const force = d3.layout.force()
-    .gravity(0.05)
-    .charge((d, i) => i ? 0 : -2000)
-    .nodes(bubbleDataState)
     .size([width, height])
-    .on("tick", tick);
+    .on('tick', () => {
+        var q = d3.geom.quadtree(bubbleDataState),
+            i = 0,
+            n = bubbleDataState.length;
 
-bubbleDataState.push(new Bubble("ACC205", 205));
-bubbleDataState.push(new Bubble("ACC207", 850));
-plot();
+        while (++i < n) q.visit(collide(bubbleDataState[i]));
 
-//setTimeout(function(){ plot(); }, 6000);
+        circles
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y)
+    });
+
+const plot = (items) => {
+
+    circles = circles.data(items, d => d.name)
+
+    circles
+        .enter()
+        .append('circle')
+        .attr('fill', (d, i) => d.getColor(i))
+        .attr('r', d => d.radius);
+
+    circles
+        .exit()
+        .transition()
+        .attr('r', 0)
+        .remove();
+
+    force
+        .nodes(items)
+        .start();
+}
 
 //connect with server via signalr
 const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
-//connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
+connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
 
 const addBubble = txnInfo => {
-    bubbleDataState.push(new Bubble(txnInfo.account, txnInfo.balance));
+    bubbleDataState.push(new Bubble(txnInfo.account, txnInfo.amount));
 };
 
 const removeBubble = account => {
@@ -112,64 +103,17 @@ const removeBubbleEvents = Bacon.fromBinder(sink => {
 const bubbleEvents = addBubbleEvents.merge(removeBubbleEvents);
 
 bubbleEvents.onValue(bubbleData => {
-    if (bubbleData.account)
-        addBubble(bubbleData);
-    else
+
+    if (!bubbleData.account) {
         removeBubble(bubbleData);
+        plot(bubbleDataState);
+        return;
+    }
 
-    plot();
+    let exists = bubbleDataState.some(e => e.account == bubbleData.account);
+
+    if (!exists && bubbleData.balance > 0) {
+        addBubble(bubbleData);
+        plot(bubbleDataState);
+    }
 });
-
-// const width = 1200,
-//     height = 800,
-//     format = d3.format(",d"),
-//     color = d3.scaleOrdinal(d3.schemeCategory20c),
-//     circleRadiusScale = d3.scaleSqrt()
-//         .domain([0, 100])
-//         .range([0, 100]),
-//     bubble = d3.pack()
-//         .size([width, height])
-//         .padding(6),
-//     svg = d3.select("body").append("svg")
-//         .attr("width", width)
-//         .attr("height", height)
-//         .attr("class", "bubble"),
-//     bubbleDataState = { children: [] };
-
-// const plot = (data, svg) => {
-
-//     if (data.children.length <= 0) return;
-
-//     let root = d3.hierarchy(data)
-//         .sum(d => d.balance)
-//         .sort((a, b) => b.balance - a.balance);
-
-//     bubble(root);
-
-//     let node = svg.selectAll(".node")
-//         .data(root.children);
-
-//     node.exit().remove();
-
-//     node.enter().append("g")
-//         .attr("class", "node")
-//         .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
-
-//     node.append("title")
-//         .text(d => d.data.balance + ": " + format(d.value));
-
-//     let sum = data.children.reduce((acc, elem) => acc + elem.balance, 0);
-//     circleRadiusScale.domain([0, sum]);
-
-//     node.append("circle")
-//         .attr("r", d => circleRadiusScale(d.data.balance))
-//         .style("fill", d => color(d.data.account));
-
-//     node.append("text")
-//         .attr("dy", ".3em")
-//         .style("text-anchor", "middle")
-//         .text(d => d.data.account.substring(0, d.r / 3));
-// };
-
-// d3.select(self.frameElement).style("height", width + "px");
-
