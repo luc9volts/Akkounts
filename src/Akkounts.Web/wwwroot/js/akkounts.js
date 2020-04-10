@@ -1,71 +1,119 @@
-﻿var connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
+﻿class Bubble {
+    static #color = d3.scale.category20c();
+    static #circleRadiusScale = d3.scale.sqrt()
+        .domain([0, 1000])
+        .range([0, 50]);
 
-connection.start().then(function () {
-    alert("ok");
-}).catch(function (err) {
-    return console.error(err.toString());
-});
+    constructor(name, size) {
+        this.name = name;
+        this.radius = Bubble.#circleRadiusScale(size);
+        this.getColor = i => Bubble.#color(i);
+    }
+}
 
-connection.on("ReceiveTxnInfo", txnInfo => {
-    initial_data.children.push(txnInfo);
-    plot(initial_data, svg);
-});
-
-connection.on("ReceiveIdleInfo", actorName => {
-    var node = document.createElement("LI");
-    var textnode = document.createTextNode(`${actorName} - IDLE`);
-
-    node.appendChild(textnode);
-    document.getElementById("myList").appendChild(node);
-});
-
-const width = 1200,
-    height = 800,
-    format = d3.format(",d"),
-    color = d3.scaleOrdinal(d3.schemeCategory20c),
-    circleRadiusScale = d3.scaleSqrt()
-        .domain([0, 100])
-        .range([0, 100]);
-
-var bubble = d3.pack()
-    .size([width, height])
-    .padding(2),
+const width = window.innerWidth,
+    height = window.innerHeight,
     svg = d3.select("body").append("svg")
         .attr("width", width)
-        .attr("height", height)
-        .attr("class", "bubble"),
-    initial_data = { children: [] };
+        .attr("height", height);
 
-const plot = (data, svg) => {
+let circles = svg.selectAll('circle'),
+    bubbleDataState = [];
 
-    if (data.children.length <= 0) return;
-
-    var root = d3.hierarchy(data)
-        .sum(d => d.balance)
-        .sort((a, b) => b.balance - a.balance);
-
-    bubble(root);
-
-    var node = svg.selectAll(".node")
-        .data(root.children)
-        .enter().append("g")
-        .attr("class", "node")
-        .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
-
-    node.append("title")
-        .text(d => d.data.balance + ": " + format(d.value));
-
-    var sum = data.children.reduce((acc, elem) => acc + elem.balance, 0);
-    circleRadiusScale.domain([0, sum]);
-
-    node.append("circle")
-        .attr("r", d => circleRadiusScale(d.data.balance))
-        .style("fill", d => color(d.data.account));
-
-    node.append("text")
-        .attr("dy", ".3em")
-        .style("text-anchor", "middle")
-        .text(d => d.data.account.substring(0, d.r / 3));
+const collide = node => {
+    var r = node.radius + 16,
+        nx1 = node.x - r,
+        nx2 = node.x + r,
+        ny1 = node.y - r,
+        ny2 = node.y + r;
+    return function (quad, x1, y1, x2, y2) {
+        if (quad.point && (quad.point !== node)) {
+            var x = node.x - quad.point.x,
+                y = node.y - quad.point.y,
+                l = Math.sqrt(x * x + y * y),
+                r = node.radius + quad.point.radius;
+            if (l < r) {
+                l = (l - r) / l * .5;
+                node.x -= x *= l;
+                node.y -= y *= l;
+                quad.point.x += x;
+                quad.point.y += y;
+            }
+        }
+        return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+    }
 };
 
-d3.select(self.frameElement).style("height", width + "px");
+const force = d3.layout.force()
+    .size([width, height])
+    .on('tick', () => {
+        var q = d3.geom.quadtree(bubbleDataState),
+            i = 0,
+            n = bubbleDataState.length;
+
+        while (++i < n) q.visit(collide(bubbleDataState[i]));
+
+        circles
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y)
+    });
+
+const plot = (items) => {
+
+    circles = circles.data(items, d => d.name)
+
+    circles
+        .enter()
+        .append('circle')
+        .attr('fill', (d, i) => d.getColor(i))
+        .attr('r', d => d.radius);
+
+    circles
+        .exit()
+        .transition()
+        .attr('r', 0)
+        .remove();
+
+    force
+        .nodes(items)
+        .start();
+}
+
+//connect with server via signalr
+const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
+connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
+
+const addBubble = txnInfo => {
+    bubbleDataState.push(new Bubble(txnInfo.account, txnInfo.amount));
+};
+
+const removeBubble = account => {
+    bubbleDataState = bubbleDataState.filter(o => o.name != account);
+};
+
+//serializing server events
+const addBubbleEvents = Bacon.fromBinder(sink => {
+    connection.on("ReceiveTxnInfo", txnInfo => sink(txnInfo));
+});
+
+const removeBubbleEvents = Bacon.fromBinder(sink => {
+    connection.on("ReceiveIdleInfo", account => sink(account));
+});
+
+const bubbleEvents = addBubbleEvents.merge(removeBubbleEvents);
+
+bubbleEvents.onValue(bubbleData => {
+
+    if (!bubbleData.account) {
+        removeBubble(bubbleData);
+        plot(bubbleDataState);
+        return;
+    }
+
+    let exists = bubbleDataState.some(e => e.account == bubbleData.account);
+
+    if (!exists && bubbleData.balance > 0) {
+        addBubble(bubbleData);
+        plot(bubbleDataState);
+    }
+});
