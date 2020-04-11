@@ -15,6 +15,7 @@
         this.name = name;
         this.radius = Bubble.#circleRadiusScale(size);
         this.color = Bubble.#color();
+        this.text = `${name} ${size}`;
     }
 }
 
@@ -25,6 +26,7 @@ const width = window.innerWidth,
         .attr("height", height);
 
 let circles = svg.selectAll('circle'),
+    text = svg.selectAll('text'),
     bubbleDataState = [];
 
 const collide = node => {
@@ -63,11 +65,16 @@ const force = d3.layout.force()
         circles
             .attr('cx', d => d.x)
             .attr('cy', d => d.y);
+
+        text
+            .attr("x", d => d.x)
+            .attr("y", d => d.y);
     });
 
 const plot = (items) => {
 
     circles = circles.data(items, d => d.name);
+    text = text.data(items, d => d.name);
 
     circles
         .enter()
@@ -75,10 +82,23 @@ const plot = (items) => {
         .attr('fill', d => d.color)
         .attr('r', d => d.radius);
 
+    text
+        .enter()
+        .append('text')
+        .attr("dy", "1.3em")
+        .style("text-anchor", "middle")
+        .text(d => d.text)
+        .attr("font-family", "Gill Sans", "Gill Sans MT")
+        .attr("font-size", d => d.radius / 5)
+        .attr("fill", "black");
+
     circles
         .exit()
         .transition()
-        .attr('r', 0)
+        .remove();
+
+    text
+        .exit()
         .remove();
 
     force
