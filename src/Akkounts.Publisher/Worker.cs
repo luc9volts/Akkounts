@@ -16,7 +16,7 @@ namespace Akkounts.Publisher
         public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
-            _restClient = new RestClient("http://localhost:5000");
+            _restClient = new RestClient("https://akkounts.azurewebsites.net");//http://localhost:5000
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -28,7 +28,7 @@ namespace Akkounts.Publisher
                 _restClient.Post(request);
 
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                await Task.Delay(3000, stoppingToken);
+                await Task.Delay(1000, stoppingToken);
             }
         }
     }
