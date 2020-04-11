@@ -28,7 +28,7 @@ namespace Akkounts.Publisher
                 _restClient.Post(request);
 
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                await Task.Delay(3000, stoppingToken);
+                await Task.Delay(2000, stoppingToken);
             }
         }
     }
