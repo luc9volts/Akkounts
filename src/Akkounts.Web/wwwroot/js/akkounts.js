@@ -52,7 +52,6 @@ const collide = node => {
         return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
     }
 };
-
 const force = d3.layout.force()
     .size([width, height])
     .on('tick', () => {
