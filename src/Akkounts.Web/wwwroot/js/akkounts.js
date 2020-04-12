@@ -107,7 +107,7 @@ const plot = (items) => {
 
 //connect with server via signalr
 const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
-connection.start().then(() => alert("ok")).catch(err => console.error(err.toString()));
+connection.start().then(() => console.log("connected")).catch(err => console.error(err.toString()));
 
 const addBubble = txnInfo => {
     let exists = bubbleDataState.some(e => e.account == txnInfo.account);
