@@ -1,5 +1,5 @@
 ﻿class Bubble {
-    static #color = () => {
+    static #randomColor = () => {
         let letters = '0123456789ABCDEF';
         let color = '#';
         for (var i = 0; i < 6; i++) {
@@ -8,14 +8,32 @@
         return color;
     };
     static #circleRadiusScale = d3.scale.sqrt()
-        .domain([0, 1000])
-        .range([0, 50]);
+        .domain([0, 10000])
+        .range([0, 70]);
+
+    #activeColor = "#66b3ff";
+    #inactiveColor = "#b3b3b3";
 
     constructor(name, size) {
         this.name = name;
-        this.radius = Bubble.#circleRadiusScale(size);
-        this.color = Bubble.#color();
-        this.text = `${name} ${size}`;
+        this.size = size;
+        this.color = this.#activeColor;//Bubble.#color();
+    }
+
+    setActive() {
+        this.color = this.#activeColor;
+    }
+
+    setInactive() {
+        this.color = this.#inactiveColor;
+    }
+
+    get radius() {
+        return Bubble.#circleRadiusScale(this.size);
+    }
+
+    get text() {
+        return `${this.name} ${this.size}`;
     }
 }
 
@@ -52,6 +70,7 @@ const collide = node => {
         return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
     }
 };
+
 const force = d3.layout.force()
     .size([width, height])
     .on('tick', () => {
@@ -75,9 +94,14 @@ const plot = (items) => {
     circles = circles.data(items, d => d.name);
     text = text.data(items, d => d.name);
 
+    circles.exit().transition().remove();
+    text.exit().remove();
+
     circles
         .enter()
-        .append('circle')
+        .append('circle');
+
+    circles
         .attr('fill', d => d.color)
         .attr('r', d => d.radius);
 
@@ -86,19 +110,12 @@ const plot = (items) => {
         .append('text')
         .attr("dy", "1.3em")
         .style("text-anchor", "middle")
-        .text(d => d.text)
         .attr("font-family", "Gill Sans", "Gill Sans MT")
-        .attr("font-size", d => d.radius / 5)
         .attr("fill", "black");
 
-    circles
-        .exit()
-        .transition()
-        .remove();
-
     text
-        .exit()
-        .remove();
+        .text(d => d.text)
+        .attr("font-size", d => d.radius / 5);
 
     force
         .nodes(items)
@@ -110,14 +127,27 @@ const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificatio
 connection.start().then(() => console.log("connected")).catch(err => console.error(err.toString()));
 
 const addBubble = txnInfo => {
-    let exists = bubbleDataState.some(e => e.account == txnInfo.account);
+    let exists = bubbleDataState.some(e => e.name == txnInfo.account);
 
-    if (!exists && txnInfo.amount > 0)
-        bubbleDataState.push(new Bubble(txnInfo.account, txnInfo.amount));
+    if (!exists)
+        bubbleDataState.push(new Bubble(txnInfo.account, txnInfo.balance));
+};
+
+const updateBubble = txnInfo => {
+    let bubbleIndex = bubbleDataState.findIndex(e => e.name == txnInfo.account);
+
+    if (bubbleIndex >= 0) {
+        bubbleDataState[bubbleIndex].size = txnInfo.balance;
+        bubbleDataState[bubbleIndex].setActive();
+    }
 };
 
 const removeBubble = account => {
-    bubbleDataState = bubbleDataState.filter(o => o.name != account);
+    //bubbleDataState = bubbleDataState.filter(o => o.name != account);
+    let bubbleIndex = bubbleDataState.findIndex(e => e.name == account);
+
+    if (bubbleIndex >= 0) 
+        bubbleDataState[bubbleIndex].setInactive();
 };
 
 //serializing server events
@@ -135,8 +165,10 @@ bubbleEvents.onValue(bubbleData => {
 
     if (!bubbleData.account)
         removeBubble(bubbleData);
-    else
+    else {
         addBubble(bubbleData);
+        updateBubble(bubbleData)
+    }
 
     plot(bubbleDataState);
 });
