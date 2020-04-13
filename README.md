@@ -6,6 +6,7 @@
 * Transactions (debit/credit) of each account will be handled by an Akka.NET Actor.
 * These transactions are sent to the customer through SignalR.
 * In the client browser, concurrent events are received and enqueued through Bacon.js
+* Using D3.js to create the bubble chart.
 * Each bubble represents an Akka Actor handling an account.
 * The bubble size corresponds to the account balance.
 * When an actor timeout expires, the color of correspondent bubble will turn gray.
