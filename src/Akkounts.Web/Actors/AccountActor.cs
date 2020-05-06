@@ -13,11 +13,18 @@ namespace Akkounts.Web.Actors
         public IStash Stash { get; set; }
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly TransactionRepository _repository;
+        private readonly string _accountNumber;
+        private readonly Balance _accountBalance;
 
         public AccountActor(IHubContext<NotificationHub> hubContext, TransactionRepository repository)
         {
             _hubContext = hubContext;
             _repository = repository;
+
+            var account = Context.Self.Path.ToString();
+            _accountNumber = account.Substring(account.LastIndexOf('/') + 1);
+            _accountBalance = _repository.GetBalance(_accountNumber);
+
             Ready();
         }
 
@@ -40,17 +47,17 @@ namespace Akkounts.Web.Actors
 
             Receive<Debit>(txnMessage =>
             {
-                var balance = _repository.GetBalance(txnMessage.Account);
+                var txnAccepted = _accountBalance.IsTransactionAllowed(txnMessage.Amount);
 
-                if (balance.IsTransactionAllowed(txnMessage.Amount))
+                if (txnAccepted)
                     SaveTransaction(txnMessage);
 
                 NotifyClients(new
                 {
                     txnMessage.Account,
                     txnMessage.Amount,
-                    Balance = balance.Amount,
-                    TxnAccepted = balance.IsTransactionAllowed(txnMessage.Amount)
+                    Balance = _accountBalance.Amount,
+                    TxnAccepted = txnAccepted
                 });
             });
 
@@ -63,6 +70,8 @@ namespace Akkounts.Web.Actors
 
         private void SaveTransaction(TransactionMessage txnMessage)
         {
+            _accountBalance.Update(txnMessage.Amount);
+
             _repository.Add(new Transaction
             {
                 AccountNumber = txnMessage.Account,
@@ -78,8 +87,7 @@ namespace Akkounts.Web.Actors
 
         private void NotifyClientsActorIdle()
         {
-            var account = Context.Self.Path.ToString();
-            _hubContext.Clients.All.SendAsync("ReceiveIdleInfo", account.Substring(account.LastIndexOf('/') + 1));
+            _hubContext.Clients.All.SendAsync("ReceiveIdleInfo", _accountNumber);
         }
     }
 }
