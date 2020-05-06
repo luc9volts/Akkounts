@@ -13,6 +13,7 @@
 
     #activeColor = "#66b3ff";
     #inactiveColor = "#b3b3b3";
+    #refusedColor = "#FF0000";
 
     constructor(name, size) {
         this.name = name;
@@ -26,6 +27,10 @@
 
     setInactive() {
         this.color = this.#inactiveColor;
+    }
+
+    setRefused() {
+        this.color = this.#refusedColor;
     }
 
     get radius() {
@@ -126,27 +131,28 @@ const plot = (items) => {
 const connection = new signalR.HubConnectionBuilder().withUrl("/Hubs/notificationHub").build();
 connection.start().then(() => console.log("connected")).catch(err => console.error(err.toString()));
 
-const addBubble = txnInfo => {
+const updateBubble = txnInfo => {
     let exists = bubbleDataState.some(e => e.name == txnInfo.account);
 
-    if (!exists)
+    if (!exists) {
         bubbleDataState.push(new Bubble(txnInfo.account, txnInfo.balance));
-};
-
-const updateBubble = txnInfo => {
-    let bubbleIndex = bubbleDataState.findIndex(e => e.name == txnInfo.account);
-
-    if (bubbleIndex >= 0) {
-        bubbleDataState[bubbleIndex].size = txnInfo.balance;
-        bubbleDataState[bubbleIndex].setActive();
+        return;
     }
+
+    let bubbleIndex = bubbleDataState.findIndex(e => e.name == txnInfo.account);
+    bubbleDataState[bubbleIndex].size = txnInfo.balance;
+
+    if (txnInfo.txnAccepted)
+        bubbleDataState[bubbleIndex].setActive();
+    else
+        bubbleDataState[bubbleIndex].setRefused();
 };
 
 const removeBubble = account => {
     //bubbleDataState = bubbleDataState.filter(o => o.name != account);
     let bubbleIndex = bubbleDataState.findIndex(e => e.name == account);
 
-    if (bubbleIndex >= 0) 
+    if (bubbleIndex >= 0)
         bubbleDataState[bubbleIndex].setInactive();
 };
 
@@ -165,10 +171,8 @@ bubbleEvents.onValue(bubbleData => {
 
     if (!bubbleData.account)
         removeBubble(bubbleData);
-    else {
-        addBubble(bubbleData);
-        updateBubble(bubbleData)
-    }
+    else
+        updateBubble(bubbleData);
 
     plot(bubbleDataState);
 });
