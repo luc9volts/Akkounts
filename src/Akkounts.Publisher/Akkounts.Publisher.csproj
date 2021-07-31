@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>dotnet-Akkounts.Publisher-E966A684-E59F-4CB1-90DA-4E00312CF527</UserSecretsId>
   </PropertyGroup>
 
