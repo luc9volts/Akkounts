@@ -8,9 +8,8 @@ namespace Akkounts.Publisher.Model
 
         public RandomTransaction()
         {
-            Amount = (decimal) _randomGen.Next(1, 99999) / 100;
-            Type = (TransactionType) _randomGen.Next(2);
-            AccountNumber = $"ACC{_randomGen.Next(1, 100):000}"; //Only a few accounts
+            Amount = (decimal) _randomGen.Next(-99999, 99999) / 100;
+            AccountNumber = $"ACC{_randomGen.Next(1, 50):000}"; //Only a few accounts
         }
     }
 }

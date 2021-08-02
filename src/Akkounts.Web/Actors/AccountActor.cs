@@ -32,20 +32,7 @@ namespace Akkounts.Web.Actors
         {
             Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
 
-            Receive<Credit>(txnMessage =>
-            {
-                SaveTransaction(txnMessage);
-
-                NotifyClients(new
-                {
-                    txnMessage.Account,
-                    txnMessage.Amount,
-                    Balance = _repository.GetBalance(txnMessage.Account).Amount,
-                    TxnAccepted = true
-                });
-            });
-
-            Receive<Debit>(txnMessage =>
+            Receive<TransactionMessage>(txnMessage =>
             {
                 var txnAccepted = _accountBalance.IsTransactionAllowed(txnMessage.Amount);
 

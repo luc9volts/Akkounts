@@ -16,7 +16,8 @@ namespace Akkounts.Publisher
         public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
-            _restClient = new RestClient("https://akkounts.azurewebsites.net");//http://localhost:5000
+            _restClient = new RestClient("https://akkounts.azurewebsites.net");
+            //_restClient = new RestClient("http://localhost:5000");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

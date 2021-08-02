@@ -18,10 +18,7 @@ namespace Akkounts.Web.Actors
         {
             Receive<Transaction>(txn =>
             {
-                var message = txn.Type.Equals(Transaction.TransactionType.Credit)
-                    ? (TransactionMessage) new Credit(txn.AccountNumber, txn.Amount, txn.StartDate)
-                    : new Debit(txn.AccountNumber, txn.Amount, txn.StartDate);
-                
+                var message = new TransactionMessage(txn.AccountNumber, txn.Amount, txn.StartDate);                
                 var child = GetChildActor(message.ConsistentHashKey.ToString());
                 child.Tell(message);
             });
