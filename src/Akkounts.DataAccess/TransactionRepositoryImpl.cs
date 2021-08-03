@@ -23,6 +23,12 @@ namespace Akkounts.DataAccess
             return new Balance(value);
         }
 
+        public IEnumerable<string> GetAccountList()
+        {
+            using var db = new LiteDatabase(DbName);
+            return db.GetCollectionNames();
+        }
+
         private static IEnumerable<Transaction> GetAllBy(string account)
         {
             using var db = new LiteDatabase(DbName);

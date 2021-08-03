@@ -32,6 +32,17 @@ namespace Akkounts.Web.Actors
         {
             Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
 
+            Receive<InitMessage>(init =>
+            {
+                NotifyClients(new
+                {
+                    init.Account,
+                    Amount = 0,
+                    Balance = _accountBalance.Amount,
+                    TxnAccepted = true
+                });
+            });
+
             Receive<TransactionMessage>(txnMessage =>
             {
                 var txnAccepted = _accountBalance.IsTransactionAllowed(txnMessage.Amount);
