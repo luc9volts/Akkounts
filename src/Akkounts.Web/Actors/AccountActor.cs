@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Akka.Actor;
 using Akkounts.Domain;
 using Akkounts.Domain.Abstract;
@@ -22,7 +23,7 @@ namespace Akkounts.Web.Actors
             _repository = repository;
 
             var account = Context.Self.Path.ToString();
-            _accountNumber = account.Substring(account.LastIndexOf('/') + 1);
+            _accountNumber = account.Split('/').Last();
             _accountBalance = _repository.GetBalance(_accountNumber);
 
             Ready();
