@@ -25,10 +25,12 @@ namespace Akkounts.Publisher
             while (!stoppingToken.IsCancellationRequested)
             {
                 var request = new RestRequest("Account");
-                request.AddJsonBody(new RandomTransaction());
+                var trx = new RandomTransaction();
+
+                request.AddJsonBody(trx);
                 _restClient.Post(request);
 
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                _logger.LogInformation("Conta: {account} Valor: {amount} at: {time}", trx.AccountNumber, trx.Amount, DateTimeOffset.Now);
                 await Task.Delay(1000, stoppingToken);
             }
         }
