@@ -6,27 +6,35 @@ using Akkounts.Domain.Abstract;
 using Akkounts.Web.ActorsMessages;
 using Akkounts.Web.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Akkounts.Web.Actors
 {
     public class AccountActor : ReceiveActor, IWithUnboundedStash
     {
         public IStash Stash { get; set; }
+        private readonly IServiceScope _scope;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly TransactionRepository _repository;
         private readonly string _accountNumber;
         private readonly Balance _accountBalance;
 
-        public AccountActor(IHubContext<NotificationHub> hubContext, TransactionRepository repository)
+        public AccountActor(IServiceProvider sp)
         {
-            _hubContext = hubContext;
-            _repository = repository;
+            _scope = sp.CreateScope();
+            _repository = _scope.ServiceProvider.GetRequiredService<TransactionRepository>();
+            _hubContext = _scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
 
             var account = Context.Self.Path.ToString();
             _accountNumber = account.Split('/').Last();
             _accountBalance = _repository.GetBalance(_accountNumber);
-
+            
             Ready();
+        }
+
+        protected override void PostStop()
+        {
+            _scope.Dispose();
         }
 
         private void Ready()

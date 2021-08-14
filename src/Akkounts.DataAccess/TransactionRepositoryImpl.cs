@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Akkounts.Domain;
 using Akkounts.Domain.Abstract;
@@ -6,14 +7,24 @@ using LiteDB;
 
 namespace Akkounts.DataAccess
 {
-    public class TransactionRepositoryImpl : TransactionRepository
+    public sealed class TransactionRepositoryImpl : TransactionRepository, IDisposable
     {
         private const string DbName = "transactions.db";
+        private readonly LiteDatabase _db;
+
+        public TransactionRepositoryImpl()
+        {
+            //_db = new LiteDatabase(DbName);
+            _db = new LiteDatabase(new ConnectionString
+            {
+                Filename = DbName,
+                Connection = ConnectionType.Direct
+            });
+        }
 
         public void Add(Transaction t)
         {
-            using var db = new LiteDatabase(DbName);
-            var col = db.GetCollection<Transaction>(t.AccountNumber);
+            var col = _db.GetCollection<Transaction>(t.AccountNumber);
             col.Insert(t);
         }
 
@@ -25,19 +36,20 @@ namespace Akkounts.DataAccess
 
         public IEnumerable<string> GetAccountList()
         {
-            using var db = new LiteDatabase(DbName);
-            return db.GetCollectionNames();
+            return _db.GetCollectionNames().ToList();
         }
 
-        private static IEnumerable<Transaction> GetAllBy(string account)
+        private IEnumerable<Transaction> GetAllBy(string account)
         {
-            using var db = new LiteDatabase(DbName);
-            var col = db.GetCollection<Transaction>(account);
-            col.EnsureIndex(x => x.StartDate);
+            var col = _db.GetCollection<Transaction>(account);
             return col
                 .FindAll()
-                .OrderBy(x => x.StartDate)
-                .ToList();
+                .OrderBy(x => x.Id);
+        }
+
+        public void Dispose()
+        {
+            _db.Dispose();
         }
     }
 }

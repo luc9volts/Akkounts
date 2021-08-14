@@ -10,17 +10,17 @@ namespace Akkounts.Web.Controllers
     public class AccountController : ControllerBase
     {
         //private readonly ILogger<AccountController> _logger;
-        private readonly IActorRef _accountsPool;
+        private readonly IActorRef _mainActor;
 
         public AccountController(AccountsActorProvider accountsActorProvider)
         {
-            _accountsPool = accountsActorProvider();
+            _mainActor = accountsActorProvider.MainActor;
         }
 
         [HttpPost]
         public IActionResult Post([FromBody] Transaction t)
         {
-            _accountsPool.Tell(t);
+            _mainActor.Tell(t);
             return Accepted(t);
         }
     }
