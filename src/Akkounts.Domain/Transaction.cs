@@ -2,11 +2,11 @@
 
 namespace Akkounts.Domain
 {
-    public class Transaction
+    public record Transaction
     {
-        public int Id { get; set; }
-        public decimal Amount { get; set; }
-        public string AccountNumber { get; set; }
-        public DateTime StartDate { get; set; }
+        public int Id { get; init; }
+        public decimal Amount { get; init; }
+        public string AccountNumber { get; init; }
+        public DateTime StartDate { get; init; }
     }
 }

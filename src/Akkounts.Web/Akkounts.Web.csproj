@@ -14,8 +14,4 @@
     <ProjectReference Include="..\Akkounts.DataAccess\Akkounts.DataAccess.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Domain\Balance.cs" />
-  </ItemGroup>
-
 </Project>
