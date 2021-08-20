@@ -10,7 +10,7 @@ namespace Akkounts.Web.Actors
     public class AkkaService : AccountsActorProvider, IHostedService
     {
         private ActorSystem _actorSystem;
-        public IActorRef MainActor { get; private set; }
+        public IActorRef Router { get; private set; }
         private readonly IServiceProvider _sp;
 
         public AkkaService(IServiceProvider sp)
@@ -26,8 +26,8 @@ namespace Akkounts.Web.Actors
 
             _actorSystem = ActorSystem.Create("AkkountsSystem", actorSystemSetup);
 
-            var props = DependencyResolver.For(_actorSystem).Props<ConsistentAccountPool>();
-            this.MainActor = _actorSystem.ActorOf(props, "MainPoolActor");
+            var props = DependencyResolver.For(_actorSystem).Props<AccountRouter>();
+            this.Router = _actorSystem.ActorOf(props, "MainPoolActor");
 
             await Task.CompletedTask;
         }

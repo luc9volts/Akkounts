@@ -4,6 +4,6 @@ namespace Akkounts.Web.Actors
 {
     public interface AccountsActorProvider
     {
-        IActorRef MainActor { get; }
+        IActorRef Router { get; }
     }
 }

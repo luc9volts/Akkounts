@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Akkounts.Web.Actors
 {
-    public class ConsistentAccountPool : ReceiveActor, IWithUnboundedStash
+    public class AccountRouter : ReceiveActor, IWithUnboundedStash
     {
         public IStash Stash { get; set; }
         private readonly IServiceScope _scope;
@@ -17,7 +17,7 @@ namespace Akkounts.Web.Actors
         private readonly TransactionRepository _repository;
         private readonly DependencyResolver _props;
 
-        public ConsistentAccountPool(IServiceProvider sp)
+        public AccountRouter(IServiceProvider sp)
         {
             _scope = sp.CreateScope();
             _actorProvider = _scope.ServiceProvider.GetRequiredService<AccountsActorProvider>();
@@ -46,9 +46,14 @@ namespace Akkounts.Web.Actors
             Receive<Transaction>(txn =>
             {
                 var message = new TransactionMessage(txn.AccountNumber, txn.Amount, txn.StartDate);
-                var child = GetChildActor(message.ConsistentHashKey.ToString());
-                child.Tell(message);
+                GetChildActor(message.ConsistentHashKey.ToString()).Forward(message);
             });
+        }
+
+        private void ReloadAllAccounts()
+        {
+            foreach (var acc in _repository.GetAccountList())
+                GetChildActor(acc).Forward(new InitMessage(acc));
         }
 
         private IActorRef GetChildActor(string actorName)
@@ -58,15 +63,6 @@ namespace Akkounts.Web.Actors
             return child is Nobody
                 ? Context.ActorOf(_props.Props<AccountActor>(), actorName)
                 : child;
-        }
-
-        private void ReloadAllAccounts()
-        {
-            foreach (var acc in _repository.GetAccountList())
-            {
-                var child = GetChildActor(acc);
-                child.Tell(new InitMessage(acc));
-            }
         }
     }
 }
