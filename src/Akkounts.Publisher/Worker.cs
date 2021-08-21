@@ -31,7 +31,7 @@ namespace Akkounts.Publisher
                 _restClient.Post(request);
 
                 _logger.LogInformation("Conta: {account} Valor: {amount} at: {time}", trx.AccountNumber, trx.Amount, DateTimeOffset.Now);
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(500, stoppingToken);
             }
         }
     }
