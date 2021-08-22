@@ -27,7 +27,7 @@ namespace Akkounts.Web.Actors
             _actorSystem = ActorSystem.Create("AkkountsSystem", actorSystemSetup);
 
             var props = DependencyResolver.For(_actorSystem).Props<AccountRouter>();
-            this.Router = _actorSystem.ActorOf(props, "MainPoolActor");
+            this.Router = _actorSystem.ActorOf(props, "AccountRouter");
 
             await Task.CompletedTask;
         }

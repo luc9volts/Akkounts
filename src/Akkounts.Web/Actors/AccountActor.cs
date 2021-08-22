@@ -24,9 +24,7 @@ namespace Akkounts.Web.Actors
             _scope = sp.CreateScope();
             _repository = _scope.ServiceProvider.GetRequiredService<TransactionRepository>();
             _hubContext = _scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
-
-            var account = Context.Self.Path.ToString();
-            _accountNumber = account.Split('/').Last();
+            _accountNumber = Context.Self.Path.ToString().Split('/').Last();
             _accountBalance = _repository.GetBalance(_accountNumber);
             
             Ready();
@@ -61,7 +59,7 @@ namespace Akkounts.Web.Actors
 
                 NotifyClients(new
                 {
-                    txnMessage.Account,
+                    Account = txnMessage.AccountNumber,
                     txnMessage.Amount,
                     Balance = _accountBalance.Amount,
                     TxnAccepted = txnAccepted
@@ -81,7 +79,7 @@ namespace Akkounts.Web.Actors
 
             _repository.Add(new Transaction
             {
-                AccountNumber = txnMessage.Account,
+                AccountNumber = txnMessage.AccountNumber,
                 Amount = txnMessage.Amount,
                 StartDate = txnMessage.StartDate
             });
