@@ -1,6 +1,4 @@
 ﻿using Akka.Actor;
-using Akkounts.Domain;
-using Akkounts.Domain.Abstract;
 using Akkounts.Web.Actors;
 using Akkounts.Web.ActorsMessages;
 using Microsoft.AspNetCore.Mvc;
@@ -14,16 +12,9 @@ namespace Akkounts.Web.Controllers
         //private readonly ILogger<AccountController> _logger;
         private readonly IActorRef _router;
 
-        public AccountController(AccountsActorProvider accountsActorProvider, TransactionRepository repository)
+        public AccountController(AccountsActorProvider accountsActorProvider)
         {
             _router = accountsActorProvider.Router;
-            ReloadAllAccounts(repository);
-        }
-
-        private void ReloadAllAccounts(TransactionRepository rep)
-        {
-            foreach (var acc in rep.GetAccountList())
-                _router.Tell(new InitMessage(acc));
         }
 
         [HttpPost]
