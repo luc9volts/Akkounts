@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akkounts.Domain;
 using Akkounts.Domain.Abstract;
@@ -14,7 +15,7 @@ namespace Akkounts.Web.Actors
     {
         public IStash Stash { get; set; }
         private readonly IServiceScope _scope;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IHubContext<NotificationHub> _hub;
         private readonly TransactionRepository _repository;
         private readonly string _accountNumber;
         private readonly Balance _accountBalance;
@@ -23,7 +24,7 @@ namespace Akkounts.Web.Actors
         {
             _scope = sp.CreateScope();
             _repository = _scope.ServiceProvider.GetRequiredService<TransactionRepository>();
-            _hubContext = _scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
+            _hub = _scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
             _accountNumber = Context.Self.Path.ToString().Split('/').Last();
             _accountBalance = _repository.GetBalance(_accountNumber);
             
@@ -39,9 +40,9 @@ namespace Akkounts.Web.Actors
         {
             Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
 
-            Receive<InitMessage>(init =>
+            Receive<InitMessage>(async init =>
             {
-                NotifyClients(new
+                await NotifyClientsAsync(new
                 {
                     init.Account,
                     Amount = 0,
@@ -50,14 +51,14 @@ namespace Akkounts.Web.Actors
                 });
             });
 
-            Receive<TransactionMessage>(txnMessage =>
+            Receive<TransactionMessage>(async txnMessage =>
             {
                 var txnAccepted = _accountBalance.IsTransactionAllowed(txnMessage.Amount);
 
                 if (txnAccepted)
                     SaveTransaction(txnMessage);
 
-                NotifyClients(new
+                await NotifyClientsAsync(new
                 {
                     Account = txnMessage.AccountNumber,
                     txnMessage.Amount,
@@ -66,9 +67,9 @@ namespace Akkounts.Web.Actors
                 });
             });
 
-            Receive<ReceiveTimeout>(timeout =>
+            Receive<ReceiveTimeout>(async timeout =>
             {
-                NotifyClientsActorIdle();
+                await NotifyClientsActorIdleAsync();
                 Context.Stop(Self);
             });
         }
@@ -85,14 +86,8 @@ namespace Akkounts.Web.Actors
             });
         }
 
-        private void NotifyClients(object info)
-        {
-            _hubContext.Clients.All.SendAsync("ReceiveTxnInfo", info);
-        }
+        private async Task NotifyClientsAsync(object info) => await _hub.Clients.All.SendAsync("ReceiveTxnInfo", info);
 
-        private void NotifyClientsActorIdle()
-        {
-            _hubContext.Clients.All.SendAsync("ReceiveIdleInfo", _accountNumber);
-        }
+        private async Task NotifyClientsActorIdleAsync() => await _hub.Clients.All.SendAsync("ReceiveIdleInfo", _accountNumber);
     }
 }

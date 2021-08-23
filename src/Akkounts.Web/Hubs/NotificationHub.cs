@@ -15,16 +15,16 @@ namespace Akkounts.Web.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            ReloadAllAccounts();
+            await ReloadAllAccountsAsync();
             await base.OnConnectedAsync();
         }
 
-        private void ReloadAllAccounts()
+        private async Task ReloadAllAccountsAsync()
         {
             foreach (var acc in _repository.GetAccountList())
             {
                 var accountBalance = _repository.GetBalance(acc);
-                Clients.Caller.SendAsync("ReceiveTxnInfo", new
+                await Clients.Caller.SendAsync("ReceiveTxnInfo", new
                 {
                     Account = acc,
                     Amount = 0,
